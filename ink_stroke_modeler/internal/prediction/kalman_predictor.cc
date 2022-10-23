@@ -15,6 +15,10 @@
 #include "ink_stroke_modeler/internal/prediction/kalman_predictor.h"
 
 #include <algorithm>
+
+#ifndef _USE_MATH_DEFINES
+#define _USE_MATH_DEFINES
+#endif
 #include <cmath>
 #include <limits>
 #include <optional>

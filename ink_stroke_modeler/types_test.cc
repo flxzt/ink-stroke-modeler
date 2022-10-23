@@ -14,6 +14,9 @@
 
 #include "ink_stroke_modeler/types.h"
 
+#ifndef _USE_MATH_DEFINES
+#define _USE_MATH_DEFINES
+#endif
 #include <cmath>
 #include <limits>
 #include <sstream>
