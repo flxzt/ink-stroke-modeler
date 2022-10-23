@@ -47,7 +47,7 @@ void StylusStateModeler::Update(Vec2 position, const StylusState &state) {
   positions_and_states_.push_back({position, state});
 
   if (params_.max_input_samples < 0 ||
-      positions_and_states_.size() > (uint)params_.max_input_samples) {
+      positions_and_states_.size() > (unsigned int)params_.max_input_samples) {
     positions_and_states_.pop_front();
   }
 }
