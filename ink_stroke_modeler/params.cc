@@ -14,9 +14,6 @@
 
 #include "ink_stroke_modeler/params.h"
 
-#ifndef _USE_MATH_DEFINES
-#define _USE_MATH_DEFINES
-#endif
 #include <cmath>
 #include <variant>
 

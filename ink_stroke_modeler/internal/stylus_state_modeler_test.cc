@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "ink_stroke_modeler/internal/utils.h"
 #include "ink_stroke_modeler/internal/stylus_state_modeler.h"
 
 #include "gmock/gmock.h"

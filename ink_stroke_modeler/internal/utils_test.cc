@@ -12,15 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ink_stroke_modeler/internal/utils.h"
 
-#ifndef _USE_MATH_DEFINES
-#define _USE_MATH_DEFINES
-#endif
 #include <cmath>
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "ink_stroke_modeler/internal/utils.h"
 #include "ink_stroke_modeler/internal/type_matchers.h"
 
 namespace ink {
