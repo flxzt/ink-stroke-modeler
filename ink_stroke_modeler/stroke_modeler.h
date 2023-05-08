@@ -57,9 +57,11 @@ class StrokeModeler {
   // Reset(StrokeModelParams).
   absl::Status Reset();
 
-  // Updates the model with a raw input, and then clears and fills the results
-  // parameter with newly generated Results. Any previously generated Result
-  // values remain valid.
+  // Updates the model with a raw input, and appends newly generated Results
+  // to the results vector. Any previously generated Result values remain valid.
+  // (This does not require that any previous results returned remain in the
+  // results vector, the vector is appended to without examining the existing
+  // contents.)
   //
   // The function fills an out parameter instead of returning by value to allow
   // the caller to reuse allocations. Update is expected to be called 10s to
@@ -68,7 +70,7 @@ class StrokeModeler {
   //
   // Returns an error if the the model has not yet been initialized (via Reset)
   // or if the input stream is malformed (e.g decreasing time, Up event before
-  // Down event). In that case, results will be empty after the call.
+  // Down event). In that case, results will be unmodified after the call.
   //
   // If this does not return an error, results will contain at least one Result,
   // and potentially more than one if the inputs are slower than the minimum
@@ -92,14 +94,14 @@ class StrokeModeler {
   //
   // Subsequent updates can be undone by calling Restore(), until a call to
   // Reset() clears the stroke or a call to Save() sets a new saved state.
-  absl::Status Save();
+  void Save();
 
   // Restores the saved state of the modeler.
   //
   // Discards the portion of input after the last call to Save(). This does not
   // clear or modify the saved state. Does nothing if Save() has not been called
   // for this stroke.
-  absl::Status Restore();
+  void Restore();
 
  private:
   void ResetInternal();
