@@ -1,4 +1,4 @@
-# Copyright 2022 Google LLC
+# Copyright 2022-2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -49,10 +49,12 @@ ink_cc_test(
   DEPS
   InkStrokeModeler::input_predictor
   InkStrokeModeler::kalman_predictor
+  GTest::gmock_main
+  absl::str_format
   InkStrokeModeler::params
   InkStrokeModeler::types
+  InkStrokeModeler::internal_types
   InkStrokeModeler::type_matchers
-  GTest::gmock_main
 )
 
 ink_cc_library(
@@ -78,7 +80,9 @@ ink_cc_test(
   DEPS
   InkStrokeModeler::input_predictor
   InkStrokeModeler::stroke_end_predictor
-  InkStrokeModeler::params
-  InkStrokeModeler::type_matchers
   GTest::gmock_main
+  InkStrokeModeler::params
+  InkStrokeModeler::types
+  InkStrokeModeler::internal_types
+  InkStrokeModeler::type_matchers
 )

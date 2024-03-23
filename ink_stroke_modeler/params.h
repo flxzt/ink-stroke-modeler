@@ -17,6 +17,7 @@
 #ifndef INK_STROKE_MODELER_PARAMS_H_
 #define INK_STROKE_MODELER_PARAMS_H_
 
+#include <cmath>
 #include <variant>
 
 #include "absl/status/status.h"
@@ -50,7 +51,7 @@ struct PositionModelerParams {
   float spring_mass_constant = 11.f / 32400;
 
   // The ratio of the pen's velocity that is subtracted from the pen's
-  // acceleration, to simulate drag.
+  // acceleration per unit time, to simulate drag.
   float drag_constant = 72.f;
 };
 
@@ -75,9 +76,16 @@ struct SamplingParams {
   int end_of_stroke_max_iterations = 20;
 
   // Maximum number of outputs to generate per call to Update or Predict.
-  // This limit avoids crashes if input events are recieved with too long of
+  // This limit avoids crashes if input events are received with too long of
   // a time between, possibly because a client was suspended and resumed.
   int max_outputs_per_call = 100000;
+
+  // Max absolute value of estimated angle to traverse in a single upsampled
+  // input step in radians (0, PI). The traversed angle is estimated by
+  // considering the change in the angle of the tip state that would happen due
+  // to the input without any upsampling. If set to -1 (the default), input is
+  // not upsampled for this reason.
+  double max_estimated_angle_to_traverse_per_input = -1;
 };
 
 // These parameters are used modeling the state of the stylus once the position

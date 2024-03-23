@@ -15,15 +15,15 @@
 #include "ink_stroke_modeler/internal/prediction/kalman_predictor.h"
 
 #include <algorithm>
-
 #include <cmath>
-#include <limits>
+#include <cstddef>
 #include <optional>
 #include <vector>
 
 #include "ink_stroke_modeler/internal/internal_types.h"
 #include "ink_stroke_modeler/internal/utils.h"
 #include "ink_stroke_modeler/params.h"
+#include "ink_stroke_modeler/types.h"
 
 namespace ink {
 namespace stroke_model {
@@ -60,8 +60,10 @@ void KalmanPredictor::Update(Vec2 position, Time time) {
   last_position_received_ = position;
   sample_times_.push_back(time);
   if (predictor_params_.max_time_samples < 0 ||
-      sample_times_.size() > (unsigned int)predictor_params_.max_time_samples)
+      sample_times_.size() >
+          static_cast<size_t>(predictor_params_.max_time_samples)) {
     sample_times_.pop_front();
+  }
 
   x_predictor_.Update(position.x);
   y_predictor_.Update(position.y);

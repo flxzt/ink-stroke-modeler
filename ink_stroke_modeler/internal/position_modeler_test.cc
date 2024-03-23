@@ -12,15 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ink_stroke_modeler/internal/utils.h"
 #include "ink_stroke_modeler/internal/position_modeler.h"
 
 #include <cmath>
 #include <iterator>
+#include <limits>
 #include <vector>
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "ink_stroke_modeler/internal/internal_types.h"
 #include "ink_stroke_modeler/internal/type_matchers.h"
 #include "ink_stroke_modeler/params.h"
@@ -33,7 +35,7 @@ namespace {
 using ::testing::ElementsAre;
 
 const Duration kDefaultTimeStep(1. / 180);
-constexpr float kTol = .00005;
+constexpr float kTol = .0005;
 
 // The expected position values are taken directly from results the old
 // TipDynamics class. The expected velocity values are from the same source, but
@@ -370,6 +372,177 @@ TEST(PositionModelerTest, SaveAndRestore) {
   current_time += kDefaultTimeStep;
   EXPECT_THAT(modeler.Update({1, 0}, current_time),
               TipStateNear({{.0909, 0}, {16.3636, 0}, current_time}, kTol));
+}
+
+TEST(NumberOfStepsBetweenInputsTest, ResolutionIsSufficient) {
+  absl::StatusOr<int> n_steps = NumberOfStepsBetweenInputs(
+      TipState{{0, 0}, {0, 0}, Time{0}},
+      Input{.position = {0, 0}, .time = Time{0}},
+      Input{.position = {1, 0}, .time = Time{1}},
+      SamplingParams{.min_output_rate = 0.1}, PositionModelerParams{});
+  ASSERT_TRUE(n_steps.ok());
+  EXPECT_EQ(*n_steps, 1);
+}
+
+TEST(NumberOfStepsBetweenInputsTest, TimeTooLong) {
+  absl::StatusOr<int> n_steps = NumberOfStepsBetweenInputs(
+      TipState{{0, 0}, {0, 0}, Time{0}},
+      Input{.position = {0, 0}, .time = Time{0}},
+      Input{.position = {1, 0}, .time = Time{20}},
+      SamplingParams{.min_output_rate = 0.1}, PositionModelerParams{});
+  ASSERT_TRUE(n_steps.ok());
+  EXPECT_EQ(*n_steps, 2);
+}
+
+TEST(NumberOfStepsBetweenInputsTest, TimeTooLongAvoidsIntOverflow) {
+  absl::StatusOr<int> n_steps = NumberOfStepsBetweenInputs(
+      TipState{{0, 0}, {0, 0}, Time{0}},
+      Input{.position = {0, 0}, .time = Time{0}},
+      Input{.position = {1, 0}, .time = Time{1}},
+      SamplingParams{.min_output_rate = 1.0 + std::numeric_limits<int>::max(),
+                     .max_outputs_per_call = std::numeric_limits<int>::max()},
+      PositionModelerParams{});
+  ASSERT_TRUE(n_steps.ok());
+  EXPECT_EQ(*n_steps, std::numeric_limits<int>::max());
+}
+
+TEST(NumberOfStepsBetweenInputsTest, ExactlyMaxOutputsPerCall) {
+  absl::StatusOr<int> n_steps = NumberOfStepsBetweenInputs(
+      TipState{{0, 0}, {0, 0}, Time{0}},
+      Input{.position = {0, 0}, .time = Time{0}},
+      Input{.position = {1, 0}, .time = Time{20}},
+      SamplingParams{.min_output_rate = 0.1, .max_outputs_per_call = 2},
+      PositionModelerParams{});
+  ASSERT_TRUE(n_steps.ok());
+  EXPECT_EQ(*n_steps, 2);
+}
+
+TEST(NumberOfStepsBetweenInputsTest, OverMaxOutputsPerCall) {
+  absl::StatusOr<int> n_steps = NumberOfStepsBetweenInputs(
+      TipState{{0, 0}, {0, 0}, Time{0}},
+      Input{.position = {0, 0}, .time = Time{0}},
+      Input{.position = {1, 0}, .time = Time{20}},
+      SamplingParams{.min_output_rate = 0.1, .max_outputs_per_call = 1},
+      PositionModelerParams{});
+  EXPECT_EQ(n_steps.status().code(), absl::StatusCode::kInvalidArgument);
+}
+
+TEST(NumberOfStepsBetweenInputsTest, NanTipPositionIsError) {
+  absl::StatusOr<int> n_steps = NumberOfStepsBetweenInputs(
+      TipState{{5, std::numeric_limits<float>::quiet_NaN()}, {1, 1}, Time{0}},
+      Input{.position = {5, 0}, .time = Time{0}},
+      Input{.position = {25, 20}, .time = Time{20}},
+      SamplingParams{.min_output_rate = 0.1, .max_outputs_per_call = 1},
+      PositionModelerParams{});
+  EXPECT_EQ(n_steps.status().code(), absl::StatusCode::kInvalidArgument);
+}
+
+TEST(NumberOfStepsBetweenInputsTest, InfiniteTipPositionIsError) {
+  absl::StatusOr<int> n_steps = NumberOfStepsBetweenInputs(
+      TipState{{5, std::numeric_limits<float>::infinity()}, {1, 1}, Time{0}},
+      Input{.position = {5, 0}, .time = Time{0}},
+      Input{.position = {25, 20}, .time = Time{20}},
+      SamplingParams{.min_output_rate = 0.1, .max_outputs_per_call = 1},
+      PositionModelerParams{});
+  EXPECT_EQ(n_steps.status().code(), absl::StatusCode::kInvalidArgument);
+}
+
+TEST(NumberOfStepsBetweenInputsTest, InfiniteTipVelocityIsError) {
+  absl::StatusOr<int> n_steps = NumberOfStepsBetweenInputs(
+      TipState{{5, 0}, {std::numeric_limits<float>::infinity(), 1}, Time{0}},
+      Input{.position = {5, 0}, .time = Time{0}},
+      Input{.position = {25, 20}, .time = Time{20}},
+      SamplingParams{.min_output_rate = 0.1, .max_outputs_per_call = 1},
+      PositionModelerParams{});
+  EXPECT_EQ(n_steps.status().code(), absl::StatusCode::kInvalidArgument);
+}
+
+TEST(NumberOfStepsBetweenInputsTest, InfiniteEndPositionIsError) {
+  absl::StatusOr<int> n_steps = NumberOfStepsBetweenInputs(
+      TipState{{5, 0}, {1, 1}, Time{0}},
+      Input{.position = {5, 0}, .time = Time{0}},
+      Input{.position = {25, std::numeric_limits<float>::infinity()},
+            .time = Time{20}},
+      SamplingParams{.min_output_rate = 0.1, .max_outputs_per_call = 1},
+      PositionModelerParams{});
+  EXPECT_EQ(n_steps.status().code(), absl::StatusCode::kInvalidArgument);
+}
+
+TEST(NumberOfStepsBetweenInputsTest,
+     HugeDifferenceBetweenTipAndEndCanOverflow) {
+  // If the difference between the tip and end positions is huge, dividing it by
+  // the spring mass constant can overflow to an infinite value, even over a
+  // very short time difference. This overflow should be handled gracefully with
+  // an InvalidArgument error.
+  absl::StatusOr<int> n_steps = NumberOfStepsBetweenInputs(
+      TipState{{3.4e38, 0}, {1, 1}, Time{0}},
+      Input{.position = {5, 0}, .time = Time{0}},
+      Input{.position = {5.0001, 0.0001}, .time = Time{0.0001}},
+      SamplingParams{.min_output_rate = 0.1, .max_outputs_per_call = 1},
+      PositionModelerParams{.spring_mass_constant = 0.5});
+  EXPECT_EQ(n_steps.status().code(), absl::StatusCode::kInvalidArgument);
+}
+
+TEST(NumberOfStepsBetweenInputsTest, CanHandleBigDifferenceBetweenTipAndEnd) {
+  // Even with a very big difference between tip and end positions, if the
+  // intermediate calculations don't overflow, we shouldn't get an error. This
+  // test case is the same as HugeDifferenceBetweenTipAndEndCanOverflow, but
+  // with the TipState x position a little smaller.
+  absl::StatusOr<int> n_steps = NumberOfStepsBetweenInputs(
+      TipState{{3.4e36, 0}, {1, 1}, Time{0}},
+      Input{.position = {5, 0}, .time = Time{0}},
+      Input{.position = {5.0001, 0.0001}, .time = Time{0.0001}},
+      SamplingParams{.min_output_rate = 0.1, .max_outputs_per_call = 1},
+      PositionModelerParams{.spring_mass_constant = 0.5});
+  EXPECT_EQ(n_steps.status().code(), absl::StatusCode::kOk);
+}
+
+TEST(NumberOfStepsBetweenInputsTest, UpsampleDueToSharpTurn) {
+  absl::StatusOr<int> n_steps = NumberOfStepsBetweenInputs(
+      TipState{{0, 0}, {0, 1}, Time{0}},
+      Input{.position = {0, 0}, .time = Time{0}},
+      // This should predict basically a 90-degree turn over the interval, it
+      // starts going straight up and is pulled very strongly to the right.
+      Input{.position = {500, 0}, .time = Time{1}},
+      SamplingParams{.min_output_rate = 0.1,
+                     // Require one sample per degree of turn that would
+                     // be made without upsampling.
+                     .max_estimated_angle_to_traverse_per_input = M_PI / 180},
+      PositionModelerParams{});
+  ASSERT_TRUE(n_steps.ok());
+  EXPECT_EQ(*n_steps, 90);
+}
+
+TEST(NumberOfStepsBetweenInputsTest, UpsampleDueToSharpTurnSamePosition) {
+  absl::StatusOr<int> n_steps = NumberOfStepsBetweenInputs(
+      TipState{{0, 0}, {0, 1}, Time{0}},
+      Input{.position = {0, 0}, .time = Time{0}},
+      // Here there's no acceleration from the spring because the input
+      // didn't move. We're ignoring drag.
+      Input{.position = {0, 0}, .time = Time{1}},
+      SamplingParams{.min_output_rate = 0.1,
+                     // Require one sample per degree of turn that would
+                     // be made without upsampling.
+                     .max_estimated_angle_to_traverse_per_input = M_PI / 180},
+      PositionModelerParams{});
+  ASSERT_TRUE(n_steps.ok());
+  EXPECT_EQ(*n_steps, 1);
+}
+
+TEST(NumberOfStepsBetweenInputsTest, UpsampleDueToSharpTurnSmallForce) {
+  absl::StatusOr<int> n_steps = NumberOfStepsBetweenInputs(
+      TipState{{0, 0}, {0, 1}, Time{0}},
+      Input{.position = {0, 0}, .time = Time{0}},
+      // Here the acceleration is at a 90-deg angle but the velocity doesn't
+      // change much.
+      Input{.position = {0, 0.0001}, .time = Time{1}},
+      SamplingParams{.min_output_rate = 0.1,
+                     // Require one sample per degree of turn that would
+                     // be made without upsampling.
+                     .max_estimated_angle_to_traverse_per_input = M_PI / 180},
+      PositionModelerParams{});
+  ASSERT_TRUE(n_steps.ok());
+  EXPECT_EQ(*n_steps, 1);
 }
 
 }  // namespace

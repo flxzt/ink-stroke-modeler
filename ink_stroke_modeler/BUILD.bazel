@@ -36,28 +36,8 @@ cc_test(
     srcs = ["params_test.cc"],
     deps = [
         ":params",
-        "@com_google_absl//absl/status",
-        "@com_google_googletest//:gtest_main",
-    ],
-)
-
-cc_library(
-    name = "types",
-    srcs = ["types.cc"],
-    hdrs = ["types.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//ink_stroke_modeler/internal:validation",
-        "@com_google_absl//absl/status",
-    ],
-)
-
-cc_test(
-    name = "types_test",
-    srcs = ["types_test.cc"],
-    deps = [
         ":types",
-        "//ink_stroke_modeler/internal:type_matchers",
+        "@com_google_absl//absl/status",
         "@com_google_googletest//:gtest_main",
     ],
 )
@@ -78,7 +58,18 @@ cc_library(
         "//ink_stroke_modeler/internal/prediction:stroke_end_predictor",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "stroke_modeler_fuzz_test",
+    srcs = ["stroke_modeler_fuzz_test.cc"],
+    deps = [
+        ":params",
+        ":stroke_modeler",
+        ":types",
+        "@com_google_fuzztest//fuzztest",
+        "@com_google_googletest//:gtest_main",
     ],
 )
 
@@ -88,9 +79,36 @@ cc_test(
     deps = [
         ":params",
         ":stroke_modeler",
+        ":types",
         "//ink_stroke_modeler/internal:type_matchers",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "types",
+    srcs = ["types.cc"],
+    hdrs = ["types.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//ink_stroke_modeler/internal:validation",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+    ],
+)
+
+cc_test(
+    name = "types_test",
+    srcs = ["types_test.cc"],
+    deps = [
+        ":types",
+        "//ink_stroke_modeler/internal:type_matchers",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings:str_format",
         "@com_google_googletest//:gtest_main",
     ],
 )

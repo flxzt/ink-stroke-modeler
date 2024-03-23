@@ -1,4 +1,4 @@
-# Copyright 2022 Google LLC
+# Copyright 2022-2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,31 +35,9 @@ ink_cc_test(
   params_test.cc
   DEPS
   InkStrokeModeler::params
-  absl::status
-  GTest::gtest_main
-)
-
-ink_cc_library(
-  NAME
-  types
-  SRCS
-  types.cc
-  HDRS
-  types.h
-  DEPS
-  absl::status
-  InkStrokeModeler::validation
-)
-
-ink_cc_test(
-  NAME
-  types_test
-  SRCS
-  types_test.cc
-  DEPS
   InkStrokeModeler::types
-  InkStrokeModeler::type_matchers
   GTest::gmock_main
+  absl::status
 )
 
 ink_cc_library(
@@ -72,6 +50,8 @@ ink_cc_library(
   DEPS
   InkStrokeModeler::params
   InkStrokeModeler::types
+  absl::status
+  absl::statusor
   InkStrokeModeler::internal_types
   InkStrokeModeler::position_modeler
   InkStrokeModeler::stylus_state_modeler
@@ -79,9 +59,19 @@ ink_cc_library(
   InkStrokeModeler::input_predictor
   InkStrokeModeler::kalman_predictor
   InkStrokeModeler::stroke_end_predictor
-  absl::status
-  absl::statusor
-  absl::strings
+)
+
+ink_cc_test(
+  NAME
+  stroke_modeler_fuzz_test
+  SRCS
+  stroke_modeler_fuzz_test.cc
+  DEPS
+  InkStrokeModeler::params
+  InkStrokeModeler::stroke_modeler
+  InkStrokeModeler::types
+  GTest::gmock_main
+  fuzztest::fuzztest
 )
 
 ink_cc_test(
@@ -92,8 +82,37 @@ ink_cc_test(
   DEPS
   InkStrokeModeler::params
   InkStrokeModeler::stroke_modeler
-  InkStrokeModeler::type_matchers
+  InkStrokeModeler::types
+  GTest::gmock_main
   absl::status
   absl::strings
+  InkStrokeModeler::type_matchers
+)
+
+ink_cc_library(
+  NAME
+  types
+  SRCS
+  types.cc
+  HDRS
+  types.h
+  DEPS
+  absl::status
+  absl::statusor
+  absl::strings
+  absl::str_format
+  InkStrokeModeler::validation
+)
+
+ink_cc_test(
+  NAME
+  types_test
+  SRCS
+  types_test.cc
+  DEPS
+  InkStrokeModeler::types
   GTest::gmock_main
+  absl::status
+  absl::str_format
+  InkStrokeModeler::type_matchers
 )

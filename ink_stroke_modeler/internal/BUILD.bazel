@@ -20,8 +20,65 @@ licenses(["notice"])
 
 cc_library(
     name = "internal_types",
+    srcs = ["internal_types.cc"],
     hdrs = ["internal_types.h"],
-    deps = ["//ink_stroke_modeler:types"],
+    deps = [
+        "//ink_stroke_modeler:types",
+        "@com_google_absl//absl/strings:str_format",
+    ],
+)
+
+cc_library(
+    name = "position_modeler",
+    srcs = ["position_modeler.cc"],
+    hdrs = ["position_modeler.h"],
+    deps = [
+        ":internal_types",
+        ":utils",
+        "//ink_stroke_modeler:params",
+        "//ink_stroke_modeler:types",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "position_modeler_test",
+    srcs = ["position_modeler_test.cc"],
+    deps = [
+        ":internal_types",
+        ":position_modeler",
+        ":type_matchers",
+        "//ink_stroke_modeler:params",
+        "//ink_stroke_modeler:types",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "stylus_state_modeler_test",
+    srcs = ["stylus_state_modeler_test.cc"],
+    deps = [
+        ":internal_types",
+        ":stylus_state_modeler",
+        ":type_matchers",
+        "//ink_stroke_modeler:params",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "internal_types_test",
+    srcs = ["internal_types_test.cc"],
+    deps = [
+        ":internal_types",
+        "//ink_stroke_modeler:types",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_googletest//:gtest_main",
+    ],
 )
 
 cc_library(
@@ -49,6 +106,7 @@ cc_test(
     deps = [
         ":type_matchers",
         ":utils",
+        "//ink_stroke_modeler:types",
         "@com_google_googletest//:gtest_main",
     ],
 )
@@ -77,30 +135,6 @@ cc_test(
 )
 
 cc_library(
-    name = "position_modeler",
-    hdrs = ["position_modeler.h"],
-    deps = [
-        ":internal_types",
-        ":utils",
-        "//ink_stroke_modeler:params",
-        "//ink_stroke_modeler:types",
-    ],
-)
-
-cc_test(
-    name = "position_modeler_test",
-    srcs = ["position_modeler_test.cc"],
-    deps = [
-        ":internal_types",
-        ":position_modeler",
-        ":type_matchers",
-        "//ink_stroke_modeler:params",
-        "//ink_stroke_modeler:types",
-        "@com_google_googletest//:gtest_main",
-    ],
-)
-
-cc_library(
     name = "stylus_state_modeler",
     srcs = ["stylus_state_modeler.cc"],
     hdrs = ["stylus_state_modeler.h"],
@@ -109,19 +143,6 @@ cc_library(
         ":utils",
         "//ink_stroke_modeler:params",
         "//ink_stroke_modeler:types",
-    ],
-)
-
-cc_test(
-    name = "stylus_state_modeler_test",
-    srcs = ["stylus_state_modeler_test.cc"],
-    deps = [
-        ":internal_types",
-        ":stylus_state_modeler",
-        ":type_matchers",
-        "//ink_stroke_modeler:params",
-        "//ink_stroke_modeler:types",
-        "@com_google_googletest//:gtest_main",
     ],
 )
 
@@ -139,6 +160,7 @@ cc_test(
     srcs = ["validation_test.cc"],
     deps = [
         ":validation",
+        "@com_google_absl//absl/status",
         "@com_google_googletest//:gtest_main",
     ],
 )
